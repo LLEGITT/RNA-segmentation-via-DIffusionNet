@@ -1,0 +1,50 @@
+# 3D RNA Molecular Surface Segmentation using DiffusionNet
+
+This repository contains a complete, robust PyTorch implementation of **DiffusionNet**, tailored for the functional segmentation of 3D RNA molecular envelopes. This project was developed as part of the **Master MVA (Mathematics, Vision, Learning)** curriculum at ENS Paris-Saclay.
+
+The goal is to predict roughly 120 functional categorical labels per vertex directly from non-Euclidean 3D surfaces, bypassing traditional spatial grid voxelization or complex coordinate data augmentation.
+
+---
+
+## 🚀 Key Features Implemented
+
+*   **Spectral Projectors:** Built dynamic batch-aware mechanisms to project/unproject spatial signals to and from the Laplacian spectral basis.
+*   **Learned Spectral Diffusion:** Implemented learnable multi-channel time diffusion layers (`nn.Parameter`) to analyze geometric structures across continuous scales.
+*   **Complex Spatial Gradients:** Engineered element-wise complex inner product mappings inside a spatial gradient module to capture vector fields from tangential meshes.
+*   **Ablation Framework:** Created a modular `Trainer` class supporting ablation configurations (switching off modules or swapping input features like raw `XYZ` vs. intrinsic `HKS`).
+
+---
+
+## 📊 DiffusionNet Architecture Overview
+
+The pipeline processes raw 3D mesh representations through the following structured blocks:
+
+1.  **Input Alignment:** Maps vertex input features ($p_{in}$) up to the operational channel width ($n_{channels} = 128$).
+2.  **DiffusionNet Blocks:** Deep stack processing continuous diffusion, complex gradient computation, point-wise MLPs, and residual skip connections.
+3.  **Output Map:** Project latent representations down to the functional multi-label classes ($p_{out} = 146$).
+
+---
+
+## 🔬 Ablation Studies & Empirical Results
+
+All configurations were trained and evaluated over **200 epochs** to assess the impact of each geometric sub-component on the validation set:
+
+| Configuration | Input Features | Learned Diffusion | Spatial Gradient | Val. Accuracy | Val. Loss |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Base Model (Reference)** | `XYZ` ($p_{in}=3$) | **Yes** | **Yes** | **74.58%** | **0.7005** |
+| **w/o Diffusion** | `XYZ` ($p_{in}=3$) | No | Yes | 1.76% | 4.7696 |
+| **w/o Gradient** | `XYZ` ($p_{in}=3$) | Yes | No | 48.52% | 1.4422 |
+| **Heat Kernel Signature (HKS)** | `HKS` ($p_{in}=32$) | Yes | Yes | 73.52% | 0.8193 |
+
+### 💡 Core Takeaways:
+*   **The Crucial Role of Diffusion:** Removing the learned diffusion layer collapses the validation accuracy to a random-guess level ($1.76\%$), proving that multi-scale intrinsic smoothing is absolutely mandatory to understand spatial macro-geometry.
+*   **Orientation via Gradients:** Removing directional gradients severely harms the accuracy ($48.52\%$). Without complex tangential dot products, the network loses track of directional variations on detailed molecular structures.
+*   **XYZ vs. Intrinsic Descriptors:** Using `HKS` yields solid performance ($73.52\%$) close to the base model, offering robust pose/rotation invariance at the cost of slight raw spatial precision.
+
+---
+
+## 🛠️ Stacks & Tools Used
+
+*   **Core:** Python, PyTorch (GPU T4 parallelization execution)
+*   **Geometry & Numerics:** NumPy, SciPy, Potpourri3D, Trimesh
+*   **Visualization:** Meshplot, PyThreeJS, Matplotlib
